@@ -12,22 +12,22 @@ const divisionSchema = new Schema<IDivision>({
 })
 
 
-divisionSchema.pre("save", async function (next) {
+divisionSchema.pre("save", async function () {
     if (this.isModified("name")) {
         const baseSlug = this.name.toLowerCase().split(" ").join("-")
         let slug = `${baseSlug}-division`
 
         let counter = 0;
         while (await Division.exists({ slug })) {
-            slug = `${slug}-${counter++}` // dhaka-division-2
+            slug = `${baseSlug}-division-${++counter}` // dhaka-division-1
         }
 
         this.slug = slug;
     }
-    next()
+    // No next() needed — Mongoose awaits the returned Promise
 })
 
-divisionSchema.pre("findOneAndUpdate", async function (next) {
+divisionSchema.pre("findOneAndUpdate", async function () {
     const division = this.getUpdate() as Partial<IDivision>
 
     if (division.name) {
@@ -36,15 +36,14 @@ divisionSchema.pre("findOneAndUpdate", async function (next) {
 
         let counter = 0;
         while (await Division.exists({ slug })) {
-            slug = `${slug}-${counter++}` // dhaka-division-2
+            slug = `${baseSlug}-division-${++counter}` // dhaka-division-1
         }
 
         division.slug = slug
     }
 
     this.setUpdate(division)
-
-    next()
+    // No next() needed
 })
 
 export const Division = model<IDivision>("Division", divisionSchema)
