@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextFunction, Request, Response } from "express"
 import httpStatus from "http-status-codes"
-import { JwtPayload } from "jsonwebtoken"
+import jwt, { JwtPayload } from "jsonwebtoken";
 import passport from "passport"
 import { envVars } from "../../config/env"
 import AppError from "../../errorHelpers/AppError"
@@ -129,15 +129,20 @@ const changePassword = catchAsync(async (req: Request, res: Response, next: Next
     })
 })
 const resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const rawToken = req.headers.authorization
+    if (!rawToken || !rawToken.startsWith("Bearer ")) {
+        throw new AppError(401, "No token received")
+    }
 
-    const decodedToken = req.user
+    const token = rawToken.split(" ")[1]
+    const decodedToken = jwt.verify(token, envVars.JWT_ACCESS_SECRET) as JwtPayload
 
-    await AuthServices.resetPassword(req.body, decodedToken as JwtPayload);
+    await AuthServices.resetPassword(req.body, decodedToken)
 
     sendResponse(res, {
         success: true,
         statusCode: httpStatus.OK,
-        message: "Password Changed Successfully",
+        message: "Password Reset Successfully",
         data: null,
     })
 })

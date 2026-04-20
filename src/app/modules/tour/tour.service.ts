@@ -176,14 +176,14 @@ const updateTour = async (id: string, payload: Partial<ITour>) => {
 const deleteTour = async (id: string) => {
     return await Tour.findByIdAndDelete(id);
 };
-const createTourType = async (payload: ITourType) => {
-    const existingTourType = await TourType.findOne({ name: payload.name });
+const createTourType = async (name: string) => {
+    const existingTourType = await TourType.findOne({ name });
 
     if (existingTourType) {
         throw new Error("Tour type already exists.");
     }
 
-    return await TourType.create({ name: payload.name });
+    return await TourType.create({ name });
 };
 const getAllTourTypes = async (query: Record<string, string>) => {
     const queryBuilder = new QueryBuilder(TourType.find(), query)
