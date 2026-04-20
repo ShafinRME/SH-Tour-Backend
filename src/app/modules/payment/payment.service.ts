@@ -13,6 +13,11 @@ import { IUser } from "../user/user.interface";
 import { PAYMENT_STATUS } from "./payment.interface";
 import { Payment } from "./payment.model";
 
+import fs from "fs";
+import path from "path";
+
+const LOGO_PATH = path.join(__dirname, "../../assets/Logo.png");
+
 
 
 const initPayment = async (bookingId: string) => {
@@ -97,19 +102,24 @@ const successPayment = async (query: Record<string, string>) => {
 
         await Payment.findByIdAndUpdate(updatedPayment._id, { invoiceUrl: cloudinaryResult.secure_url }, { runValidators: true, session })
 
+        const logoBase64 = fs.existsSync(LOGO_PATH)
+            ? `data:image/png;base64,${fs.readFileSync(LOGO_PATH).toString("base64")}`
+            : "";
+
         await sendEmail({
             to: (updatedBooking.user as unknown as IUser).email,
-            subject: "Your Booking Invoice",
+            subject: "Your Booking Invoice — SH Tour",
             templateName: "invoice",
-            templateData: invoiceData,
-            attachments: [
-                {
-                    filename: "invoice.pdf",
-                    content: pdfBuffer,
-                    contentType: "application/pdf"
-                }
-            ]
-        })
+            templateData: {
+                ...invoiceData,
+                logoBase64,
+            },
+            attachments: [{
+                filename: "invoice.pdf",
+                content: pdfBuffer,
+                contentType: "application/pdf",
+            }]
+        });
 
         await session.commitTransaction(); //transaction
         session.endSession()
