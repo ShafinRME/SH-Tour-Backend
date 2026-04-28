@@ -95,15 +95,17 @@ const getNewAccessToken = catchAsync(async (req: Request, res: Response, next: N
 })
 const logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
 
+    const isProduction = envVars.NODE_ENV === "production"
+
     res.clearCookie("accessToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax"
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax"
     })
     res.clearCookie("refreshToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "lax"
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax"
     })
 
     sendResponse(res, {
