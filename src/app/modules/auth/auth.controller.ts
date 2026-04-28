@@ -202,7 +202,7 @@ const googleCallbackController = catchAsync(async (req: Request, res: Response, 
     //     data: null,
     // })
 
-    res.redirect(`${envVars.FRONTEND_URL}/${redirectTo}`)
+    res.redirect(`${envVars.FRONTEND_URL}/google-callback?accessToken=${tokenInfo.accessToken}&refreshToken=${tokenInfo.refreshToken}&redirect=${redirectTo}`)
 })
 
 export const AuthControllers = {
