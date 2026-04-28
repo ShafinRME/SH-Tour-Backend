@@ -233,6 +233,19 @@ The server will run at `http://localhost:5000`
 
 ---
 
+## 🧩 Problems Solved
+
+- Secure SSLCommerz international payment gateway integration with IPN validation
+- OTP-based user verification using Redis with automatic expiry
+- Cross-domain cookie handling for production with `secure` and `sameSite` flags
+- Google OAuth 2.0 cross-domain authentication with token redirect strategy
+- PDF invoice generation and instant download after successful payment
+- JWT access & refresh token rotation with blacklist-free stateless auth
+- Multer + Cloudinary integration for multiple image uploads per tour
+- Super Admin auto-seeding on server startup
+
+---
+
 ## 👨‍💻 Author
 
 **Md. Shafin Ahmed**
