@@ -32,19 +32,16 @@ export const sendEmail = async ({
         const html = await ejs.renderFile(templatePath, templateData);
 
         await axios.post(
-            "https://api.brevo.com/v3/smtp/email",
+            "https://api.resend.com/emails",
             {
-                sender: {
-                    email: envVars.EMAIL_SENDER.SMTP_FROM,
-                    name: "SH Tour",
-                },
-                to: [{ email: to }],
+                from: "onboarding@resend.dev",
+                to: [to],
                 subject: subject,
-                htmlContent: html,
+                html: html as string,
             },
             {
                 headers: {
-                    "api-key": envVars.BREVO_API_KEY,
+                    "Authorization": `Bearer ${envVars.RESEND_API_KEY}`,
                     "Content-Type": "application/json",
                 },
             }
