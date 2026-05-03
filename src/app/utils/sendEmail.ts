@@ -20,15 +20,15 @@ const transporter = nodemailer.createTransport({
 })
 
 interface SendEmailOptions {
-    to: string,
+    to: string;
     subject: string;
     templateName: string;
-    templateData?: Record<string, any>
+    templateData?: Record<string, any>;
     attachments?: {
-        filename: string,
-        content: Buffer | string,
-        contentType: string
-    }[]
+        filename: string;
+        content: Buffer | string;
+        contentType: string;
+    }[];
 }
 
 export const sendEmail = async ({
@@ -39,8 +39,18 @@ export const sendEmail = async ({
     attachments
 }: SendEmailOptions) => {
     try {
+        console.log("📧 Attempting to send email to:", to);
+        console.log("🔧 SMTP Config:", {
+            host: envVars.EMAIL_SENDER.SMTP_HOST,
+            port: envVars.EMAIL_SENDER.SMTP_PORT,
+            user: envVars.EMAIL_SENDER.SMTP_USER
+        });
+
         const templatePath = path.join(__dirname, `templates/${templateName}.ejs`)
         const html = await ejs.renderFile(templatePath, templateData)
+
+        console.log("✅ Template rendered successfully");
+
         const info = await transporter.sendMail({
             from: envVars.EMAIL_SENDER.SMTP_FROM,
             to: to,
@@ -52,10 +62,9 @@ export const sendEmail = async ({
                 contentType: attachment.contentType
             }))
         })
-        console.log(`\u2709\uFE0F Email sent to ${to}: ${info.messageId}`);
+        console.log(`✉️ Email sent to ${to}: ${info.messageId}`);
     } catch (error: any) {
         console.log("email sending error", error);
         throw new AppError(500, "Email sending failed")
     }
-
 }
