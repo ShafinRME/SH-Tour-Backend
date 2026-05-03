@@ -24,7 +24,17 @@ app.use(express.json())
 app.set("trust proxy", 1);
 app.use(express.urlencoded({ extended: true }))
 app.use(cors({
-    origin: envVars.FRONTEND_URL,
+    origin: (origin, callback) => {
+        const allowed = [
+            envVars.FRONTEND_URL,
+            'http://localhost:3000',
+        ];
+        if (!origin || allowed.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error(`CORS blocked: ${origin}`));
+        }
+    },
     credentials: true
 }))
 
