@@ -1,10 +1,20 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from "axios";
 import ejs from "ejs";
+import nodemailer from "nodemailer";
 import path from "path";
 import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
+
+const transporter = nodemailer.createTransport({
+    host: envVars.EMAIL_SENDER.SMTP_HOST,
+    port: Number(envVars.EMAIL_SENDER.SMTP_PORT),
+    secure: true,
+    auth: {
+        user: envVars.EMAIL_SENDER.SMTP_USER,
+        pass: envVars.EMAIL_SENDER.SMTP_PASS,
+    },
+})
 
 interface SendEmailOptions {
     to: string;
@@ -23,33 +33,25 @@ export const sendEmail = async ({
     subject,
     templateName,
     templateData,
+    attachments
 }: SendEmailOptions) => {
     try {
-        const templatePath = path.join(
-            __dirname,
-            `templates/${templateName}.ejs`
-        );
-        const html = await ejs.renderFile(templatePath, templateData);
-
-        await axios.post(
-            "https://api.resend.com/emails",
-            {
-                from: "onboarding@resend.dev",
-                to: [to],
-                subject: subject,
-                html: html as string,
-            },
-            {
-                headers: {
-                    "Authorization": `Bearer ${envVars.RESEND_API_KEY}`,
-                    "Content-Type": "application/json",
-                },
-            }
-        );
-
-        console.log(`✉️ Email sent to ${to}`);
+        const templatePath = path.join(__dirname, `templates/${templateName}.ejs`)
+        const html = await ejs.renderFile(templatePath, templateData)
+        const info = await transporter.sendMail({
+            from: envVars.EMAIL_SENDER.SMTP_FROM,
+            to: to,
+            subject: subject,
+            html: html as string,
+            attachments: attachments?.map(attachment => ({
+                filename: attachment.filename,
+                content: attachment.content,
+                contentType: attachment.contentType
+            }))
+        })
+        console.log(`✉️ Email sent to ${to}: ${info.messageId}`);
     } catch (error: any) {
-        console.log("email sending error", error?.response?.data || error);
-        throw new AppError(500, "Email sending failed");
+        console.log("email sending error", error);
+        throw new AppError(500, "Email sending failed")
     }
-};
+}
