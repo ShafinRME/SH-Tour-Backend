@@ -8,9 +8,9 @@ import "./app/config/passport";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 import notFound from "./app/middlewares/notFound";
 import { router } from "./app/routes";
+import { PaymentRoutes } from "./app/modules/payment/payment.route";
 
 const app = express()
-
 
 app.use(expressSession({
     secret: envVars.EXPRESS_SESSION_SECRET,
@@ -21,8 +21,12 @@ app.use(passport.initialize())
 app.use(passport.session())
 app.use(cookieParser())
 app.use(express.json())
-app.set("trust proxy", 1);
 app.use(express.urlencoded({ extended: true }))
+app.set("trust proxy", 1);
+
+// ✅ Mount payment routes BEFORE cors — SSLCommerz server callbacks don't need CORS
+app.use("/api/v1/payment", PaymentRoutes)
+
 app.use(cors({
     origin: (origin, callback) => {
         const allowed = [
@@ -38,7 +42,7 @@ app.use(cors({
     credentials: true
 }))
 
-app.use("/api/v1", router)
+app.use("/api/v1", router) // PaymentRoutes is also here, but /api/v1/payment hits first
 
 app.get("/", (req: Request, res: Response) => {
     res.status(200).json({
@@ -46,9 +50,7 @@ app.get("/", (req: Request, res: Response) => {
     })
 })
 
-
 app.use(globalErrorHandler)
-
 app.use(notFound)
 
 export default app
