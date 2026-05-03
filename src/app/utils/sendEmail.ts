@@ -9,23 +9,26 @@ import AppError from "../errorHelpers/AppError";
 const transporter = nodemailer.createTransport({
     host: envVars.EMAIL_SENDER.SMTP_HOST,
     port: Number(envVars.EMAIL_SENDER.SMTP_PORT),
-    secure: true,
+    secure: Number(envVars.EMAIL_SENDER.SMTP_PORT) === 465,
     auth: {
         user: envVars.EMAIL_SENDER.SMTP_USER,
-        pass: envVars.EMAIL_SENDER.SMTP_PASS,
+        pass: envVars.EMAIL_SENDER.SMTP_PASS
     },
+    tls: {
+        rejectUnauthorized: false
+    }
 })
 
 interface SendEmailOptions {
-    to: string;
+    to: string,
     subject: string;
     templateName: string;
-    templateData?: Record<string, any>;
+    templateData?: Record<string, any>
     attachments?: {
-        filename: string;
-        content: Buffer | string;
-        contentType: string;
-    }[];
+        filename: string,
+        content: Buffer | string,
+        contentType: string
+    }[]
 }
 
 export const sendEmail = async ({
@@ -42,16 +45,17 @@ export const sendEmail = async ({
             from: envVars.EMAIL_SENDER.SMTP_FROM,
             to: to,
             subject: subject,
-            html: html as string,
+            html: html,
             attachments: attachments?.map(attachment => ({
                 filename: attachment.filename,
                 content: attachment.content,
                 contentType: attachment.contentType
             }))
         })
-        console.log(`✉️ Email sent to ${to}: ${info.messageId}`);
+        console.log(`\u2709\uFE0F Email sent to ${to}: ${info.messageId}`);
     } catch (error: any) {
         console.log("email sending error", error);
         throw new AppError(500, "Email sending failed")
     }
+
 }
