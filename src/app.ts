@@ -11,6 +11,8 @@ import { router } from "./app/routes";
 import { PaymentRoutes } from "./app/modules/payment/payment.route";
 
 const app = express()
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
 app.use(expressSession({
     secret: envVars.EXPRESS_SESSION_SECRET,
@@ -20,8 +22,7 @@ app.use(expressSession({
 app.use(passport.initialize())
 app.use(passport.session())
 app.use(cookieParser())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
+
 app.set("trust proxy", 1);
 
 // ✅ Mount payment routes BEFORE cors — SSLCommerz server callbacks don't need CORS
