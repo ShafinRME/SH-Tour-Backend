@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import httpStatus from "http-status-codes";
 import { uploadBufferToCloudinary } from "../../config/cloudinary.config";
@@ -106,23 +107,25 @@ const successPayment = async (query: Record<string, string>) => {
             ? `data:image/png;base64,${fs.readFileSync(LOGO_PATH).toString("base64")}`
             : "";
 
-        await sendEmail({
-            to: (updatedBooking.user as unknown as IUser).email,
-            subject: "Your Booking Invoice — SH Tour",
-            templateName: "invoice",
-            templateData: {
-                ...invoiceData,
-                logoBase64,
-            },
-            attachments: [{
-                filename: "invoice.pdf",
-                content: pdfBuffer,
-                contentType: "application/pdf",
-            }]
-        });
+        try {
+            await sendEmail({
+                to: (updatedBooking.user as unknown as IUser).email,
+                subject: "Your Booking Invoice — SH Tour",
+                templateName: "invoice",
+                templateData: { ...invoiceData, logoBase64 },
+                attachments: [{
+                    filename: "invoice.pdf",
+                    content: pdfBuffer,
+                    contentType: "application/pdf",
+                }]
+            });
+        } catch (emailError) {
+            console.error("⚠️ Invoice email failed (non-fatal):", emailError);
+            // Don't rethrow — payment is already successful
+        }
 
-        await session.commitTransaction(); //transaction
-        session.endSession()
+        await session.commitTransaction();
+        session.endSession();
         return { success: true, message: "Payment Completed Successfully" }
     } catch (error) {
         await session.abortTransaction(); // rollback
