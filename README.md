@@ -2,9 +2,9 @@
 
 > **"Explore Bangladesh, One Tour at a Time."**
 
-This is the backend REST API for **SH-Tour** — a full-stack tour management platform. It handles authentication, tour management, booking, SSLCommerz payment processing, OTP verification, PDF invoice generation, and admin analytics.
+This is the backend REST API for **SH-Tour** — a full-stack tour management platform. It handles authentication, tour management, booking, SSLCommerz payment processing, OTP verification, PDF invoice generation, admin analytics, and automated booking notifications.
 
-🌐 **Live API:** [https://sh-tour-backend.onrender.com](https://sh-tour-backend.onrender.com)
+🌐 **Live API:** [https://sh-tour-backend-production.up.railway.app](https://sh-tour-backend-production.up.railway.app)
 🔗 **Frontend Repo:** [https://github.com/ShafinRME/SH-Tour-Frontend](https://github.com/ShafinRME/SH-Tour-Frontend)
 
 ---
@@ -19,6 +19,8 @@ This is the backend REST API for **SH-Tour** — a full-stack tour management pl
 - Booking management system
 - SSLCommerz payment gateway integration
 - PDF invoice generation and download
+- Admin booking notification email on every successful payment
+- Environment-aware email strategy (Gmail SMTP locally, Resend HTTP API in production)
 - Admin analytics — bookings, payments, users, tours
 - Secure environment variable management
 
@@ -47,10 +49,11 @@ This is the backend REST API for **SH-Tour** — a full-stack tour management pl
 | Google OAuth 2.0 | [developers.google.com](https://developers.google.com) |
 | Cloudinary | [cloudinary.com](https://cloudinary.com) |
 | Nodemailer | [nodemailer.com](https://nodemailer.com) |
+| Resend | [resend.com](https://resend.com) |
 | SSLCommerz | [sslcommerz.com](https://sslcommerz.com) |
 | PDFKit | [pdfkit.org](https://pdfkit.org) |
 | Zod | [zod.dev](https://zod.dev) |
-| Render | [render.com](https://render.com) |
+| Railway | [railway.app](https://railway.app) |
 
 ---
 
@@ -175,9 +178,9 @@ SSL_IPN_URL=http://localhost:5000/api/v1/payment/validate-payment
 SSL_SUCCESS_BACKEND_URL=http://localhost:5000/api/v1/payment/success
 SSL_FAIL_BACKEND_URL=http://localhost:5000/api/v1/payment/fail
 SSL_CANCEL_BACKEND_URL=http://localhost:5000/api/v1/payment/cancel
-SSL_SUCCESS_FRONTEND_URL=http://localhost:5173/payment/success
-SSL_FAIL_FRONTEND_URL=http://localhost:5173/payment/fail
-SSL_CANCEL_FRONTEND_URL=http://localhost:5173/payment/cancel
+SSL_SUCCESS_FRONTEND_URL=http://localhost:3000/payment/success
+SSL_FAIL_FRONTEND_URL=http://localhost:3000/payment/fail
+SSL_CANCEL_FRONTEND_URL=http://localhost:3000/payment/cancel
 
 # Google OAuth
 GOOGLE_CLIENT_ID=your_google_client_id
@@ -189,12 +192,18 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# Email
+# Email (Gmail SMTP — used in development only)
 SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_USER=your_email
-SMTP_PASS=your_app_password
-SMTP_FROM=your_email
+SMTP_PORT=587
+SMTP_USER=your_gmail_address
+SMTP_PASS=your_gmail_app_password
+SMTP_FROM=your_gmail_address
+
+# Resend (used in production — not required locally)
+RESEND_API_KEY=your_resend_api_key
+
+# Admin notification
+ADMIN_NOTIFICATION_EMAIL=your_admin_email
 
 # Redis
 REDIS_HOST=your_redis_host
@@ -206,7 +215,7 @@ REDIS_PASSWORD=your_redis_password
 EXPRESS_SESSION_SECRET=your_session_secret
 
 # Frontend URL
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:3000
 
 # Super Admin
 SUPER_ADMIN_EMAIL=your_super_admin_email
@@ -222,6 +231,23 @@ The server will run at `http://localhost:5000`
 
 ---
 
+## 📧 Email Strategy
+
+This project uses an environment-aware dual email strategy to handle Railway's SMTP port restrictions in production:
+
+| Environment | Provider | Method |
+|---|---|---|
+| `development` | Gmail SMTP | Nodemailer via port 587 |
+| `production` | Resend | HTTP API (bypasses Railway SMTP block) |
+
+**Emails sent:**
+- OTP verification email (on OTP request)
+- Password reset email (on forgot password)
+- Invoice email with PDF attachment (on successful payment) — local only
+- Admin booking notification (on every successful payment) — both environments
+
+---
+
 ## 🔮 Future Improvements
 
 - Extended user dashboard with booking analytics
@@ -230,6 +256,7 @@ The server will run at `http://localhost:5000`
 - Stripe payment gateway integration
 - Integration with Bangladeshi payment gateways (bKash, Nagad)
 - Push notifications for booking status updates
+- Custom domain email for production (full user invoice delivery)
 
 ---
 
@@ -243,6 +270,8 @@ The server will run at `http://localhost:5000`
 - JWT access & refresh token rotation with blacklist-free stateless auth
 - Multer + Cloudinary integration for multiple image uploads per tour
 - Super Admin auto-seeding on server startup
+- Railway SMTP block bypassed using Resend HTTP API in production
+- Environment-aware email switching — Gmail locally, Resend in production with zero config change
 
 ---
 
