@@ -1,5 +1,144 @@
-<h2>Hello <%= name %>,</h2>
-<p>Your OTP code is: <strong>
-        <%= otp %>
-    </strong></p>
-<p>This code is valid for 2 minutes.</p>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>OTP Verification — SH Tour</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f0ede8;
+            font-family: Arial, sans-serif;
+            padding: 40px 16px;
+        }
+
+        .wrap {
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .hero {
+            background: #085041;
+            padding: 32px 40px 28px;
+        }
+
+        .hero-title {
+            font-size: 22px;
+            color: #ffffff;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .hero-sub {
+            font-size: 13px;
+            color: #9FE1CB;
+        }
+
+        .body {
+            padding: 32px 40px;
+        }
+
+        .body p {
+            font-size: 14px;
+            color: #4B5563;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        .otp-box {
+            background: #E1F5EE;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .otp-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #0F6E56;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .otp-code {
+            font-size: 36px;
+            font-weight: 700;
+            color: #085041;
+            letter-spacing: 0.25em;
+            font-family: monospace;
+        }
+
+        .warning {
+            border: 1px solid #E5E7EB;
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .warning p {
+            font-size: 13px;
+            color: #6B7280;
+            margin: 0;
+        }
+
+        .footer {
+            background: #085041;
+            padding: 16px 40px;
+            text-align: center;
+        }
+
+        .footer p {
+            font-size: 12px;
+            color: #9FE1CB;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="card">
+            <div class="hero">
+                <div class="hero-title">SH Tour</div>
+                <div class="hero-sub">Verify your identity</div>
+            </div>
+            <div class="body">
+                <p>Hello <strong>
+                        <%= name %>
+                    </strong>,<br><br>
+                    Use the code below to complete your verification. This code expires in <strong>2 minutes</strong>.
+                </p>
+
+                <div class="otp-box">
+                    <div class="otp-label">Your OTP code</div>
+                    <div class="otp-code">
+                        <%= otp %>
+                    </div>
+                </div>
+
+                <div class="warning">
+                    <p>If you didn't request this code, you can safely ignore this email. Never share your OTP with
+                        anyone.</p>
+                </div>
+            </div>
+            <div class="footer">
+                <p>SH Tour &bull; support@shtour.com</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
