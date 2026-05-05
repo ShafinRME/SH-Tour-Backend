@@ -13,9 +13,9 @@ import { ITour } from "../tour/tour.interface";
 import { IUser } from "../user/user.interface";
 import { PAYMENT_STATUS } from "./payment.interface";
 import { Payment } from "./payment.model";
-
 import fs from "fs";
 import path from "path";
+import { envVars } from "../../config/env";
 
 const LOGO_PATH = path.join(__dirname, "../../assets/Logo.png");
 
@@ -53,19 +53,15 @@ const initPayment = async (bookingId: string) => {
 
 };
 const successPayment = async (query: Record<string, string>) => {
-
-    // Update Booking Status to COnfirm 
-    // Update Payment Status to PAID
-
     const session = await Booking.startSession();
     session.startTransaction()
 
     try {
-
-
-        const updatedPayment = await Payment.findOneAndUpdate({ transactionId: query.transactionId }, {
-            status: PAYMENT_STATUS.PAID,
-        }, { new: true, runValidators: true, session: session })
+        const updatedPayment = await Payment.findOneAndUpdate(
+            { transactionId: query.transactionId },
+            { status: PAYMENT_STATUS.PAID },
+            { new: true, runValidators: true, session: session }
+        )
 
         if (!updatedPayment) {
             throw new AppError(401, "Payment not found")
@@ -78,7 +74,7 @@ const successPayment = async (query: Record<string, string>) => {
                 { new: true, runValidators: true, session }
             )
             .populate("tour", "title")
-            .populate("user", "name email")
+            .populate("user", "name email phone")  // 👈 added phone
 
         if (!updatedBooking) {
             throw new AppError(401, "Booking not found")
@@ -94,43 +90,69 @@ const successPayment = async (query: Record<string, string>) => {
         }
 
         const pdfBuffer = await generatePdf(invoiceData)
-
         const cloudinaryResult = await uploadBufferToCloudinary(pdfBuffer, "invoice")
 
         if (!cloudinaryResult) {
             throw new AppError(401, "Error uploading pdf")
         }
 
-        await Payment.findByIdAndUpdate(updatedPayment._id, { invoiceUrl: cloudinaryResult.secure_url }, { runValidators: true, session })
+        await Payment.findByIdAndUpdate(
+            updatedPayment._id,
+            { invoiceUrl: cloudinaryResult.secure_url },
+            { runValidators: true, session }
+        )
 
         const logoBase64 = fs.existsSync(LOGO_PATH)
             ? `data:image/png;base64,${fs.readFileSync(LOGO_PATH).toString("base64")}`
             : "";
 
-        try {
-            await sendEmail({
-                to: (updatedBooking.user as unknown as IUser).email,
-                subject: "Your Booking Invoice — SH Tour",
-                templateName: "invoice",
-                templateData: { ...invoiceData, logoBase64 },
-                attachments: [{
-                    filename: "invoice.pdf",
-                    content: pdfBuffer,
-                    contentType: "application/pdf",
-                }]
-            });
-        } catch (emailError) {
-            console.error("⚠️ Invoice email failed (non-fatal):", emailError);
-            // Don't rethrow — payment is already successful
-        }
-
+        // ✅ Commit transaction BEFORE sending emails
         await session.commitTransaction();
         session.endSession();
+
+        const userEmail = (updatedBooking.user as unknown as IUser).email;
+        const userName = (updatedBooking.user as unknown as IUser).name;
+        const userPhone = (updatedBooking.user as unknown as IUser & { phone: string }).phone || "N/A";
+
+        // 🔥 User invoice email — fire & forget
+        sendEmail({
+            to: userEmail,
+            subject: "Your Booking Invoice — SH Tour",
+            templateName: "invoice",
+            templateData: { ...invoiceData, logoBase64 },
+            attachments: [{
+                filename: "invoice.pdf",
+                content: pdfBuffer,
+                contentType: "application/pdf",
+            }],
+        }).catch((err) => console.error("⚠️ Invoice email failed:", err));
+
+        // 🔔 Admin notification — fire & forget
+        sendEmail({
+            to: envVars.ADMIN_NOTIFICATION_EMAIL,
+            subject: `🎉 New Booking from ${userName}`,
+            templateName: "bookingNotification",
+            templateData: {
+                userName,
+                userEmail,
+                userPhone,
+                tourTitle: invoiceData.tourTitle,
+                guestCount: invoiceData.guestCount,
+                totalAmount: invoiceData.totalAmount,
+                transactionId: invoiceData.transactionId,
+                bookingDate: new Date(invoiceData.bookingDate).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                }),
+            },
+        }).catch((err) => console.error("⚠️ Admin notification failed:", err));
+
         return { success: true, message: "Payment Completed Successfully" }
+
     } catch (error) {
-        await session.abortTransaction(); // rollback
+        await session.abortTransaction();
         session.endSession()
-        // throw new AppError(httpStatus.BAD_REQUEST, error) ❌❌
         throw error
     }
 };
