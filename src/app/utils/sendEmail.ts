@@ -3,21 +3,9 @@
 import ejs from "ejs";
 import nodemailer from "nodemailer";
 import path from "path";
+import { Resend } from "resend";
 import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
-
-const transporter = nodemailer.createTransport({
-    host: envVars.EMAIL_SENDER.SMTP_HOST,
-    port: Number(envVars.EMAIL_SENDER.SMTP_PORT),
-    secure: Number(envVars.EMAIL_SENDER.SMTP_PORT) === 465,
-    auth: {
-        user: envVars.EMAIL_SENDER.SMTP_USER,
-        pass: envVars.EMAIL_SENDER.SMTP_PASS
-    },
-    tls: {
-        rejectUnauthorized: false
-    }
-})
 
 interface SendEmailOptions {
     to: string;
@@ -36,35 +24,65 @@ export const sendEmail = async ({
     subject,
     templateName,
     templateData,
-    attachments
+    attachments,
 }: SendEmailOptions) => {
-    try {
-        console.log("📧 Attempting to send email to:", to);
-        console.log("🔧 SMTP Config:", {
-            host: envVars.EMAIL_SENDER.SMTP_HOST,
-            port: envVars.EMAIL_SENDER.SMTP_PORT,
-            user: envVars.EMAIL_SENDER.SMTP_USER
+    const templatePath = path.join(__dirname, `templates/${templateName}.ejs`);
+    const html = await ejs.renderFile(templatePath, templateData);
+
+    // ✅ LOCAL → Gmail SMTP (unchanged, works perfectly)
+    if (process.env.NODE_ENV !== "production") {
+        console.log("\n📧 [LOCAL] Sending via Gmail SMTP to:", to);
+
+        const transporter = nodemailer.createTransport({
+            host: envVars.EMAIL_SENDER.SMTP_HOST,       // smtp.gmail.com
+            port: Number(envVars.EMAIL_SENDER.SMTP_PORT), // 587
+            secure: false,
+            auth: {
+                user: envVars.EMAIL_SENDER.SMTP_USER,     // shafin.nextgen1@gmail.com
+                pass: envVars.EMAIL_SENDER.SMTP_PASS,     // ugfnjutqcpnayrof (app pass)
+            },
+            tls: { rejectUnauthorized: false },
         });
-
-        const templatePath = path.join(__dirname, `templates/${templateName}.ejs`)
-        const html = await ejs.renderFile(templatePath, templateData)
-
-        console.log("✅ Template rendered successfully");
 
         const info = await transporter.sendMail({
             from: envVars.EMAIL_SENDER.SMTP_FROM,
-            to: to,
-            subject: subject,
-            html: html,
-            attachments: attachments?.map(attachment => ({
-                filename: attachment.filename,
-                content: attachment.content,
-                contentType: attachment.contentType
-            }))
-        })
-        console.log(`✉️ Email sent to ${to}: ${info.messageId}`);
-    } catch (error: any) {
-        console.error("📧 Email sending error:", error.message, error.code);
-        throw new AppError(500, `Email sending failed: ${error.message}`)
+            to,
+            subject,
+            html,
+            attachments: attachments?.map((a) => ({
+                filename: a.filename,
+                content: a.content,
+                contentType: a.contentType,
+            })),
+        });
+
+        console.log(`✉️ [LOCAL] Email sent: ${info.messageId}`);
+        return;
     }
-}
+
+    // 🚀 PRODUCTION → Resend HTTP API (bypasses Railway block)
+    console.log("\n📧 [PROD] Sending via Resend to:", to);
+
+    const resend = new Resend(envVars.RESEND_API_KEY);
+
+    const { data, error } = await resend.emails.send({
+        from: "SH Tour <onboarding@resend.dev>",
+        to: [to],
+        subject,
+        html,
+        attachments: attachments?.map((a) => ({
+            filename: a.filename,
+            content:
+                a.content instanceof Buffer
+                    ? a.content.toString("base64")
+                    : a.content,
+        })),
+    });
+
+    if (error) {
+        console.error("📧 Resend error:", error);
+        throw new AppError(500, `Email sending failed: ${error.message}`);
+    }
+
+    console.log(`✉️ [PROD] Resend email sent: ${data?.id}`);
+};
