@@ -64,7 +64,7 @@ export const sendEmail = async ({
         })
         console.log(`✉️ Email sent to ${to}: ${info.messageId}`);
     } catch (error: any) {
-        console.log("email sending error", error);
-        throw new AppError(500, "Email sending failed")
+        console.error("📧 Email sending error:", error.message, error.code);
+        throw new AppError(500, `Email sending failed: ${error.message}`)
     }
 }
